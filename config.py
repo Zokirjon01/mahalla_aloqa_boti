@@ -1,7 +1,15 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# 1. Avval .env.local ni yuklashga urinib ko'ramiz
+if os.path.exists(".env.local"):
+    load_dotenv(".env.local")
+    print("📁 .env.local faylidan sozlamalar yuklandi")
+elif os.path.exists(".env"):
+    load_dotenv(".env")
+    print("📁 .env faylidan sozlamalar yuklandi")
+else:
+    print("⚠️  Hech qanday .env fayli topilmadi, environment variables dan foydalanilmoqda")
 
 # Asosiy sozlamalar
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -33,3 +41,4 @@ print(f"⚙️ Sozlamalar yuklandi:")
 print(f"   🤖 Bot: @{BOT_USERNAME}")
 print(f"   👥 Ruxsat berilgan guruhlar: {ALLOWED_GROUP_IDS}")
 print(f"   👤 Adminlar: {ADMIN_IDS}")
+print(f"   🗄️  Database URL mavjud: {'✅ HA' if DATABASE_URL else '❌ YOQ'}")

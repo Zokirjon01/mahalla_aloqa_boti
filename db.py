@@ -1,7 +1,6 @@
 import asyncpg
-import os
+from config import DATABASE_URL
 from typing import Dict, List, Optional
-from datetime import datetime
 
 # Database obyekti
 pool: asyncpg.Pool | None = None
@@ -13,21 +12,18 @@ async def init_db():
     global pool
 
     try:
-        # PostgreSQL URL ni olish
-        DATABASE_URL = os.getenv("DATABASE_URL")
-
         if not DATABASE_URL:
-            print("❌ DATABASE_URL topilmadi! .env faylida DATABASE_URL ni kiriting")
+            print("❌ DATABASE_URL topilmadi! .env.local yoki .env faylida DATABASE_URL ni kiriting")
             return False
 
         print("🔄 PostgreSQL database ulanmoqda...")
-        print(f"📡 URL: {DATABASE_URL[:50]}...")  # URL ni qisman ko'rsatish
 
         pool = await asyncpg.create_pool(
             DATABASE_URL,
             min_size=1,
             max_size=5,
-            timeout=30
+            timeout=60,
+            command_timeout=60
         )
 
         async with pool.acquire() as conn:
@@ -69,7 +65,7 @@ async def init_db():
     except Exception as e:
         print(f"❌ Database xatosi: {e}")
         # Xato tafsilotlarini chiqaramiz
-        print(f"   DATABASE_URL: {os.getenv('DATABASE_URL')[:30] if os.getenv('DATABASE_URL') else 'Not found'}")
+        print(f"   DATABASE_URL: {DATABASE_URL[:30] if DATABASE_URL else 'Not found'}")
         return False
 
 
