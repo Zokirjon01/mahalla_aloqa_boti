@@ -12,7 +12,7 @@ async def init_db():
     global pool
     try:
         print("🔄 Database ulanmoqda...")
-        pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=20)
+        pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, timeout=30)
 
         async with pool.acquire() as conn:
             # Asosiy kontaklar jadvali
