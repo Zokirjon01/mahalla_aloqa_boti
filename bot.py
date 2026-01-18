@@ -517,8 +517,8 @@ async def cmd_add_contact(message: Message, command: CommandObject):
             "📌 <b>TO'G'RI MISOLLAR:</b>\n"
             "<code>Tez yordam | 103</code>\n"
             "<code>Elektrik usta | +998901234567</code>\n"
-            "<code>Gaz xizmati | 998901234567</code>\n"
-            "<code>Suv xizmati | 901234567</code>\n",
+            "<code>Elektrik usta | 998901234567</code>\n"
+            "<code>Elektrik usta | 901234567</code>\n",
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
                     [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back")]
@@ -987,8 +987,8 @@ async def handle_admin_actions(call: CallbackQuery, action: str):
             "📌 <b>TO'G'RI MISOLLAR:</b>\n"
             "<code>Tez yordam | 103</code>\n"
             "<code>Elektrik usta | +998901234567</code>\n"
-            "<code>Gaz xizmati | 998901234567</code>\n"
-            "<code>Suv xizmati | 901234567</code>\n",
+            "<code>Elektrik usta | 998901234567</code>\n"
+            "<code>Elektrik usta | 901234567</code>\n",
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
                     [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back")]
