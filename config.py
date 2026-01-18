@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 if os.path.exists(".env.local"):
     load_dotenv(".env.local")
     print("📁 .env.local faylidan sozlamalar yuklandi")
+elif os.path.exists(".env"):
+    load_dotenv(".env")
+    print("📁 .env faylidan sozlamalar yuklandi")
 else:
     print("⚠️  Hech qanday .env fayli topilmadi, environment variables dan foydalanilmoqda")
 
