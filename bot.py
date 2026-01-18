@@ -1150,8 +1150,7 @@ async def main():
     except Exception as e:
         print(f"❌ Bot xatosi: {e}")
     finally:
-        if hasattr(db, 'pool') and db.pool:
-            await db.pool.close()
+        await db.close_db()
 
 
 if __name__ == "__main__":
