@@ -49,17 +49,17 @@ async def init_db():
             await conn.execute("""
             INSERT INTO contacts (service, phone) 
             VALUES 
-                ("Yong‘in xizmati", "101"),
-                ("Tez yordam", "103"),
-                ("Militsiya", "102"),
-                ("Gaz xizmati", "104"),
-                ("Suv xizmati", "105"),
-                ("Yagona favqulodda holat", "112")
-                ("Telefon aloqa", "1007"),
-                ("Pochta xizmati", "1008")
-                ("Sog'liqni saqlash", "1401")
-                ("Bank xizmati", "1980")
-                ("Transport xizmati", "1660")
+                ('Yong''in xizmati', '101'),
+                ('Tez yordam', '103'),
+                ('Militsiya', '102'),
+                ('Gaz xizmati', '104'),
+                ('Suv xizmati', '105'),
+                ('Yagona favqulodda holat', '112'),
+                ('Telefon aloqa', '1007'),
+                ('Pochta xizmati', '1008'),
+                ('Sog''liqni saqlash', '1401'),
+                ('Bank xizmati', '1980'),
+                ('Transport xizmati', '1660')
             ON CONFLICT (service) DO NOTHING
             """)
 

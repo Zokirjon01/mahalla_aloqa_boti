@@ -13,7 +13,7 @@ from aiogram.types import (
 from aiogram.filters import Command, CommandObject, ChatMemberUpdatedFilter
 from aiogram.client.default import DefaultBotProperties
 
-from config import BOT_TOKEN, ADMIN_IDS, ALLOWED_GROUP_IDS, DEV_NAME, DEV_USERNAME, BOT_USERNAME
+from config import BOT_TOKEN, ADMIN_IDS, ALLOWED_GROUP_IDS, DEV_NAME, DEV_USERNAME, BOT_USERNAME, print_config
 import db
 
 # =================== BOT YARATISH ===================
@@ -1134,6 +1134,11 @@ async def main():
     """Asosiy bot funksiyasi"""
     print("=" * 60)
     print("🤖 MAHALLA ALOQA BOTI ISHGA TUSHMOGDA...")
+
+    # Sozlamalarni chiqarish
+    print_config()
+
+    print("=" * 60)
 
     # Database ga ulanish
     db_ok = await db.init_db()

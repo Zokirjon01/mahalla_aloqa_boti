@@ -2,14 +2,15 @@ import os
 from dotenv import load_dotenv
 
 # 1. Avval .env.local ni yuklashga urinib ko'ramiz
+env_loaded = False
 if os.path.exists(".env.local"):
     load_dotenv(".env.local")
+    env_loaded = True
     print("📁 .env.local faylidan sozlamalar yuklandi")
 elif os.path.exists(".env"):
     load_dotenv(".env")
+    env_loaded = True
     print("📁 .env faylidan sozlamalar yuklandi")
-else:
-    print("⚠️  Hech qanday .env fayli topilmadi, environment variables dan foydalanilmoqda")
 
 # Asosiy sozlamalar
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -37,8 +38,12 @@ DEV_NAME = os.getenv("DEV_NAME", "developer_name")
 DEV_USERNAME = os.getenv("DEV_USERNAME", "developer_username")
 BOT_USERNAME = os.getenv("BOT_USERNAME", "MahallaYordamBot")
 
-print(f"⚙️ Sozlamalar yuklandi:")
-print(f"   🤖 Bot: @{BOT_USERNAME}")
-print(f"   👥 Ruxsat berilgan guruhlar: {ALLOWED_GROUP_IDS}")
-print(f"   👤 Adminlar: {ADMIN_IDS}")
-print(f"   🗄️  Database URL mavjud: {'✅ HA' if DATABASE_URL else '❌ YOQ'}")
+
+# Sozlamalarni chiqarish funksiyasi
+def print_config():
+    """Sozlamalarni ekranga chiqarish"""
+    print(f"⚙️ Sozlamalar yuklandi:")
+    print(f"   🤖 Bot: @{BOT_USERNAME}")
+    print(f"   👥 Ruxsat berilgan guruhlar: {ALLOWED_GROUP_IDS}")
+    print(f"   👤 Adminlar: {ADMIN_IDS}")
+    print(f"   🗄️  Database URL mavjud: {'✅ HA' if DATABASE_URL else '❌ YOQ'}")
