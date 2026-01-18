@@ -62,11 +62,47 @@ def create_admin_menu():
     )
 
 
-def format_phone_for_display(phone: str) -> str:
-    """Telefon raqamini formatlamasdan ko'rsatish"""
-    if not phone:
-        return ""
-    return phone.strip()
+def format_contact_button(service: str, phone: str) -> str:
+    """Kontakt tugmasini formatlash: Xizmat nomi (raqam)"""
+    # Telefon raqamini tozalash
+    cleaned = ''.join(c for c in phone if c.isdigit() or c == '+')
+
+    if not cleaned:
+        return f"📱 {service}"
+
+    # Qisqa raqamlar (2-5 raqam)
+    if cleaned.isdigit() and 2 <= len(cleaned) <= 5:
+        return f"📱 {service} ({cleaned})"
+
+    # Uzun raqamlar - oxirgi 4 ta raqamni ko'rsatamiz
+    if len(cleaned) > 5:
+        # Agar +998 bilan boshlansa
+        if cleaned.startswith('+998'):
+            # Oxirgi 4 ta raqam
+            last_four = cleaned[-4:]
+            # Operator kodini ko'rsatamiz
+            if len(cleaned) >= 7:
+                operator_code = cleaned[4:7]  # 90, 91, 93, 94, 95, 97, 98, 99
+                return f"📱 {service} ({operator_code}***{last_four})"
+
+        # Agar 998 bilan boshlansa
+        elif cleaned.startswith('998'):
+            if len(cleaned) >= 6:
+                operator_code = cleaned[3:6]  # 901, 902, 933, 944, etc
+                last_four = cleaned[-4:]
+                return f"📱 {service} ({operator_code}***{last_four})"
+
+        # Agar 9 raqam bo'lsa (901234567)
+        elif len(cleaned) == 9:
+            operator_code = cleaned[:3]  # 901, 902, 933, 944, etc
+            last_four = cleaned[-4:]
+            return f"📱 {service} ({operator_code}***{last_four})"
+
+    # Boshqa holatlar
+    if len(cleaned) <= 15:
+        return f"📱 {service} ({cleaned})"
+    else:
+        return f"📱 {service} ({cleaned[:12]}...)"
 
 
 def is_valid_phone(phone: str) -> bool:
@@ -96,31 +132,42 @@ def is_valid_phone(phone: str) -> bool:
     return False
 
 
-def get_phone_type(phone: str) -> str:
-    """Telefon raqami turini aniqlash"""
-    if not phone:
-        return "invalid"
-
+def format_phone_with_emoji(phone: str) -> str:
+    """Telefon raqamini emoji bilan formatlash"""
     cleaned = ''.join(c for c in phone if c.isdigit() or c == '+')
 
     if not cleaned:
-        return "invalid"
+        return phone
 
-    # Qisqa raqamlar (102,103,911 kabi)
+    # Qisqa raqamlar (102, 103, 911 kabi)
     if cleaned.isdigit() and 2 <= len(cleaned) <= 5:
-        return "short"
+        return f"📞 {phone}"
 
     # Uzun raqamlar
-    if cleaned.startswith("+998") and len(cleaned) == 13:
-        return "uzbek_long"
-    elif cleaned.startswith("998") and len(cleaned) == 12:
-        return "uzbek_long"
-    elif cleaned.isdigit() and len(cleaned) == 9:  # 901234567
-        return "uzbek_long"
-    elif cleaned.isdigit() and len(cleaned) == 12:  # 998901234567
-        return "uzbek_long"
+    if cleaned.startswith("+998"):
+        return f"🇺🇿 {phone}"
+    elif cleaned.startswith("998"):
+        return f"🇺🇿 +{phone}"
+    elif cleaned.isdigit() and len(cleaned) == 9:
+        return f"🇺🇿 +998{phone}"
+    elif cleaned.isdigit() and len(cleaned) == 12:
+        return f"🇺🇿 +{phone}"
 
-    return "invalid"
+    return phone
+
+
+def create_whatsapp_url(phone: str) -> str:
+    """WhatsApp URL yaratish"""
+    cleaned = ''.join(c for c in phone if c.isdigit())
+
+    if cleaned.startswith("998"):
+        return f"https://wa.me/{cleaned}"
+    elif cleaned.startswith("+998"):
+        return f"https://wa.me/{cleaned[1:]}"
+    elif len(cleaned) == 9:
+        return f"https://wa.me/998{cleaned}"
+    else:
+        return f"https://wa.me/{cleaned}"
 
 
 async def setup_bot_commands():
@@ -212,18 +259,32 @@ async def restrict_bot_join(event: ChatMemberUpdated):
         print(f"✅ Ruxsat berilgan guruhga qo'shildi: {chat.id}")
         # Guruhga xabar yuborish
         welcome_text = (
-            "✅ <b>Mahalla Aloqa Boti ushbu guruhga biriktirildi.</b>\n\n"
+            "<b>\nAssalomu alaykum 😊</b>\n"
+            "<b>Mahalla Tezkor Aloqa Boti</b> ushbu guruhga muvaffaqiyatli biriktirildi.\n\n"
+            "📍 <i>Mahallamiz uchun kerakli barcha aloqa raqamlari endi bir joyda!</i>\n\n"
             "📞 <b>Tezkor aloqa raqamlari:</b> /aloqa\n"
-            "🔥 <b>Mashhur raqamlar:</b> /top\n"
-            "🤖 <b>Bot haqida:</b> /yordam\n\n"
+            "🔥 <b>Eng mashhur 8 ta raqam:</b> /top\n"
+            "🆔 <b>Chat va foydalanuvchi ID:</b> /id\n"
+            "ℹ️ <b>Bot haqida ma'lumot:</b> /yordam\n\n"
+            "👇 <b>Yoki pastdagi menyu tugmalaridan foydalaning</b>"
         )
 
-        if is_admin(event.from_user.id):
-            welcome_text += (
-                "<i>Admin: Yangi kontakt qo'shish uchun /qoshish buyrug'idan foydalaning</i>"
-            )
+        # 1️⃣ Xabar yuboramiz
+        msg = await bot.send_message(
+            chat.id,
+            welcome_text,
+            reply_markup=create_main_menu(is_admin(event.from_user.id))
+        )
 
-        await bot.send_message(chat.id, welcome_text)
+        # 2️⃣ PIN qilishga urinamiz
+        try:
+            await bot.pin_chat_message(
+                chat_id=chat.id,
+                message_id=msg.message_id,
+                disable_notification=True
+            )
+        except Exception as e:
+            print(f"⚠️ Pin qilishda xatolik: {e}")
 
 
 # =================== START VA YORDAM ===================
@@ -237,7 +298,7 @@ async def cmd_start(message: Message):
 
     welcome_text = (
         "🤖 <b>Mahalla Tezkor Aloqa Boti</b>\n\n"
-        "📍 <i>Mahallangiz uchun zarur bo'lgan barcha aloqa raqamlari bir joyda!</i>\n\n"
+        "📍 <i>Mahalla uchun kerakli barcha aloqa raqamlari endi bir joyda!</i>\n\n"
         "🔸 <b>Mavjud buyruqlar:</b>\n"
         "• /aloqa - Tezkor aloqa raqamlari\n"
         "• /top - Mashhur 8ta kontakt\n"
@@ -258,7 +319,7 @@ async def cmd_start(message: Message):
 # =================== KONTAKTNI KO'RSATISH ===================
 @dp.callback_query(F.data.startswith("contact:"))
 async def show_contact_details(call: CallbackQuery):
-    """Kontakt tafsilotlarini ko'rsatish"""
+    """Kontakt tafsilotlarini ko'rsatish (raqam to'g'ridan ko'rsatiladi)"""
     try:
         if not is_allowed_chat(call.message.chat.id):
             await call.answer("❌ Ruxsat yo'q", show_alert=True)
@@ -277,65 +338,46 @@ async def show_contact_details(call: CallbackQuery):
         # Click count ni oshirish
         await db.increment_click_count(service)
 
-        phone_type = get_phone_type(phone)
-        formatted_phone = format_phone_for_display(phone)
+        # Telefon raqamini formatlash
+        formatted_phone = format_phone_with_emoji(phone)
 
-        # Tugmalarni yaratish
-        buttons = []
+        # WhatsApp URL tayyorlash
+        whatsapp_url = create_whatsapp_url(phone)
 
-        if phone_type == "short":
-            buttons.append([
-                InlineKeyboardButton(
-                    text="📞 Raqamni ko'rish",
-                    callback_data=f"showphone:{phone}"
-                )
+        # Tugmalarni yaratish (faqat orqaga va boshqa kontaktlar)
+        buttons = [
+            [
+                InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back"),
+                InlineKeyboardButton(text="📞 Boshqa kontaktlar", callback_data="menu:contacts")
+            ]
+        ]
+
+        # Agar bu uzun raqam bo'lsa, WhatsApp tugmasini qo'shamiz
+        cleaned = ''.join(c for c in phone if c.isdigit() or c == '+')
+        is_long_uzbek = (cleaned.startswith("+998") and len(cleaned) == 13) or \
+                        (cleaned.startswith("998") and len(cleaned) == 12) or \
+                        (cleaned.isdigit() and len(cleaned) == 9) or \
+                        (cleaned.isdigit() and len(cleaned) == 12)
+
+        if is_long_uzbek:
+            buttons.insert(0, [
+                InlineKeyboardButton(text="💬 WhatsApp ga yozish", url=whatsapp_url)
             ])
-        elif phone_type == "uzbek_long":
-            whatsapp_num = ''.join(c for c in phone if c.isdigit())
-            if whatsapp_num.startswith("998"):
-                whatsapp_num = whatsapp_num[3:]
-            elif whatsapp_num.startswith("+998"):
-                whatsapp_num = whatsapp_num[4:]
-
-            buttons.append([
-                InlineKeyboardButton(
-                    text="📱 Raqamni ko'rish",
-                    callback_data=f"showphone:{phone}"
-                ),
-                InlineKeyboardButton(
-                    text="💬 WhatsApp",
-                    url=f"https://wa.me/{whatsapp_num}"
-                )
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton(
-                    text="📋 Raqamni ko'rish",
-                    callback_data=f"showphone:{phone}"
-                )
-            ])
-
-        # ORQAGA TUGMALARI
-        buttons.append([
-            InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back"),
-            InlineKeyboardButton(text="📞 Boshqa kontaktlar", callback_data="menu:contacts")
-        ])
 
         keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-        # Javob matni
+        # Javob matni - raqam to'g'ridan ko'rsatiladi
         response = (
             f"👤 <b>{service}</b>\n\n"
             f"📞 <b>Telefon raqami:</b>\n"
-            f"<a href='tel:+998901234567'>{formatted_phone}</a>\n\n"
+            f"<code>{phone}</code>\n\n"
         )
 
-        if phone_type == "short":
-            response += "<i>Bu qisqa raqam. Raqamni ko'rish uchun tugmani bosing.</i>"
-        elif phone_type == "uzbek_long":
-            response += "<i>Raqamni nusxalash uchun tugmani bosing.</i>"
-        else:
-            response += "<i>Raqam formatini tekshirib, qayta kiriting.</i>"
+        # Qo'shimcha ma'lumot
+        if len(cleaned) <= 5 and cleaned.isdigit():
+            response += "<i>⚠️ Bu qisqa xizmat raqami. To'g'ridan-to'g'ri qo'ng'iroq qilishingiz mumkin.</i>"
+        elif is_long_uzbek:
+            response += "<i>📱 Raqamni nusxalash uchun ustiga bosing va tanlang.</i>"
 
         await call.message.edit_text(response, reply_markup=keyboard)
         await call.answer()
@@ -351,7 +393,7 @@ async def show_contact_details(call: CallbackQuery):
 # =================== ALOQA RAQAMLARI ===================
 @dp.message(Command("aloqa", "contact", "kontakt"))
 async def cmd_contacts(message: Message):
-    """Tezkor aloqa raqamlari"""
+    """Tezkor aloqa raqamlari (raqam bilan ko'rsatish)"""
     if not is_allowed_chat(message.chat.id):
         return
 
@@ -372,10 +414,11 @@ async def cmd_contacts(message: Message):
 
     buttons = []
     for service, phone in contacts:
-        # Faqat service nomini ko'rsatamiz
+        # Raqam bilan ko'rsatamiz
+        button_text = format_contact_button(service, phone)
         buttons.append([
             InlineKeyboardButton(
-                text=f"📱 {service}",
+                text=button_text,
                 callback_data=f"contact:{service}:{phone}"
             )
         ])
@@ -422,7 +465,9 @@ async def cmd_top_contacts(message: Message):
     buttons = []
     for i, (service, phone, click_count) in enumerate(top_contacts, 1):
         emoji = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"][i - 1]
-        display_text = f"{emoji} {service} ({click_count})"
+        # Raqam bilan ko'rsatamiz
+        button_text = format_contact_button(service, phone)
+        display_text = f"{emoji} {button_text[2:]} ({click_count})"
 
         buttons.append([
             InlineKeyboardButton(
@@ -446,61 +491,6 @@ async def cmd_top_contacts(message: Message):
 
     # Menyu tarixiga qo'shamiz
     db.add_to_menu_history(message.from_user.id, "top")
-
-
-# =================== RAQAMNI KO'RSATISH ===================
-@dp.callback_query(F.data.startswith("showphone:"))
-async def show_phone_handler(call: CallbackQuery):
-    """Raqamni to'liq ko'rsatish"""
-    try:
-        phone = call.data.split(":", 1)[1]
-        formatted_phone = format_phone_for_display(phone)
-        phone_type = get_phone_type(phone)
-
-        response = f"📱 <b>Telefon raqami:</b>\n\n<code>{formatted_phone}</code>\n\n"
-
-        if phone_type == "short":
-            response += "🔹 <b>Qisqa raqam:</b> To'g'ridan-to'g'ri telefoningizdan terishingiz mumkin\n"
-        elif phone_type == "uzbek_long":
-            response += "📝 <b>Qo'llanma:</b>\n"
-            response += "1. Raqamni bosing (nusxalanadi)\n"
-            response += "2. Telefon dasturingizga o'ting\n"
-            response += "3. Terish maydoniga yopishtiring\n"
-        else:
-            response += "⚠️ <b>Eslatma:</b> Raqam formatini tekshirib, qayta kiriting\n"
-
-        # Tugmalar
-        buttons = []
-
-        if phone_type == "uzbek_long":
-            whatsapp_num = ''.join(c for c in phone if c.isdigit())
-            if whatsapp_num.startswith("998"):
-                whatsapp_num = whatsapp_num[3:]
-            elif whatsapp_num.startswith("+998"):
-                whatsapp_num = whatsapp_num[4:]
-
-            buttons.append([
-                InlineKeyboardButton(
-                    text="💬 WhatsApp orqali yozish",
-                    url=f"https://wa.me/{whatsapp_num}"
-                )
-            ])
-
-        buttons.append([
-            InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back")
-        ])
-
-        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-
-        await call.message.answer(response, reply_markup=keyboard)
-        await call.answer("✅ Raqam yuborildi! Nusxalash uchun raqamni bosing.")
-
-        # Menyu tarixiga qo'shamiz
-        await add_menu_to_history(call, f"showphone:{phone}")
-
-    except Exception as e:
-        print(f"❌ Raqam ko'rsatish xatosi: {e}")
-        await call.answer("❌ Xatolik", show_alert=True)
 
 
 # =================== ADMIN FUNKSIYALARI ===================
@@ -585,13 +575,10 @@ async def cmd_add_contact(message: Message, command: CommandObject):
         success = await db.update_contact(service, phone)
 
         if success:
-            phone_type = get_phone_type(phone)
-
             await message.answer(
                 f"✅ <b>Kontakt qo'shildi:</b>\n\n"
                 f"📋 <b>Xizmat:</b> {service}\n"
-                f"📞 <b>Raqam:</b> <code>{phone}</code>\n"
-                f"🔹 <b>Turi:</b> {'Qisqa raqam' if phone_type == 'short' else 'Oʻzbekiston raqami'}\n\n"
+                f"📞 <b>Raqam:</b> <code>{phone}</code>\n\n"
                 f"<i>Endi /aloqa orqali ko'rishingiz mumkin.</i>",
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=[
@@ -667,12 +654,10 @@ async def handle_contact_text(message: Message):
         success = await db.update_contact(service, phone)
 
         if success:
-            phone_type = get_phone_type(phone)
             await message.answer(
                 f"✅ <b>Kontakt qo'shildi:</b>\n\n"
                 f"📋 <b>Xizmat:</b> {service}\n"
-                f"📞 <b>Raqam:</b> <code>{phone}</code>\n"
-                f"🔹 <b>Turi:</b> {'Qisqa raqam' if phone_type == 'short' else 'Oʻzbekiston raqami'}\n\n"
+                f"📞 <b>Raqam:</b> <code>{phone}</code>\n\n"
                 f"<i>Endi /aloqa orqali ko'rishingiz mumkin.</i>",
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=[
@@ -726,10 +711,13 @@ async def cmd_delete_contact(message: Message, command: CommandObject):
 
         buttons = []
         for service, phone, click_count in contacts:
-            display_phone = phone[:15] + "..." if len(phone) > 15 else phone
+            # Raqam bilan ko'rsatamiz
+            button_text = format_contact_button(service, phone)
+            display_text = f"❌ {button_text[2:]}"  # Emoji olib tashlaymiz
+
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"❌ {service} ({display_phone})",
+                    text=display_text,
                     callback_data=f"delete:{service}"
                 )
             ])
@@ -804,7 +792,7 @@ async def handle_menu(call: CallbackQuery, menu_option: str):
     if menu_option == "main":
         await call.message.edit_text(
             "🤖 <b>Mahalla Tezkor Aloqa Boti</b>\n\n"
-            "📍 <i>Mahallangiz uchun zarur bo'lgan barcha aloqa raqamlari bir joyda!</i>\n\n"
+            "📍 <i>Mahalla uchun kerakli barcha aloqa raqamlari endi bir joyda!\n\n"
             "👇 Pastdagi tugmalardan foydalaning:",
             reply_markup=create_main_menu(is_admin_user)
         )
@@ -828,9 +816,11 @@ async def handle_menu(call: CallbackQuery, menu_option: str):
 
         buttons = []
         for service, phone in contacts:
+            # Raqam bilan ko'rsatamiz
+            button_text = format_contact_button(service, phone)
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"📱 {service}",
+                    text=button_text,
                     callback_data=f"contact:{service}:{phone}"
                 )
             ])
@@ -868,7 +858,9 @@ async def handle_menu(call: CallbackQuery, menu_option: str):
         buttons = []
         for i, (service, phone, click_count) in enumerate(top_contacts, 1):
             emoji = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"][i - 1]
-            display_text = f"{emoji} {service} ({click_count})"
+            # Raqam bilan ko'rsatamiz
+            button_text = format_contact_button(service, phone)
+            display_text = f"{emoji} {button_text[2:]} ({click_count})"
 
             buttons.append([
                 InlineKeyboardButton(
@@ -907,9 +899,6 @@ async def handle_menu(call: CallbackQuery, menu_option: str):
             f"👨‍💻 Dasturchi: <a href='https://t.me/{DEV_USERNAME}'>{DEV_NAME}</a>\n\n"
             f"🤖 <b>Bot:</b> <a href='https://t.me/{bot_clean}'>@{bot_clean}</a>\n\n"
             f"💡 <i>Taklif va shikoyatlar uchun dasturchi bilan bog'laning.</i>"
-
-
-
         )
 
         buttons = []
@@ -934,7 +923,7 @@ async def handle_menu(call: CallbackQuery, menu_option: str):
             f"• <b>Chat turi:</b> {call.message.chat.type}\n"
             f"• <b>Sizning ID:</b> <code>{call.from_user.id}</code>\n"
             f"• <b>Username:</b> {username_display}\n"
-            f"• <b>Admin statusi:</b> {'✅ HA' if is_user_admin else '❌ YO‘Q'}\n\n"
+            f"• <b>Admin statusi:</b> {'✅ HA' if is_user_admin else '❌ YOQ'}\n\n"
             f"<i>Bot faqat ruxsat berilgan guruhda ishlaydi.</i>"
         )
 
@@ -1012,10 +1001,13 @@ async def handle_admin_actions(call: CallbackQuery, action: str):
 
         buttons = []
         for service, phone, click_count in contacts:
-            display_phone = phone[:15] + "..." if len(phone) > 15 else phone
+            # Raqam bilan ko'rsatamiz
+            button_text = format_contact_button(service, phone)
+            display_text = f"❌ {button_text[2:]}"  # Emoji olib tashlaymiz
+
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"❌ {service} ({display_phone})",
+                    text=display_text,
                     callback_data=f"delete:{service}"
                 )
             ])
@@ -1134,6 +1126,7 @@ async def main():
     """Asosiy bot funksiyasi"""
     print("=" * 60)
     print("🤖 MAHALLA ALOQA BOTI ISHGA TUSHMOGDA...")
+    print("=" * 60)
 
     # Sozlamalarni chiqarish
     print_config()
@@ -1141,6 +1134,7 @@ async def main():
     print("=" * 60)
 
     # Database ga ulanish
+    print("🔄 PostgreSQL database ulanmoqda...")
     db_ok = await db.init_db()
     if not db_ok:
         print("❌ Database bilan muammo! Bot ishlamaydi.")
