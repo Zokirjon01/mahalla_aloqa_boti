@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python bot.py"
+
+[variables]
+BOT_TOKEN = "required"
+ADMIN_IDS = "required"
+ALLOWED_GROUP_IDS = "required"

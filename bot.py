@@ -1134,48 +1134,24 @@ async def main():
     """Asosiy bot funksiyasi"""
     print("=" * 60)
     print("🤖 MAHALLA ALOQA BOTI ISHGA TUSHMOGDA...")
-    print(f"📍 Ruxsat berilgan guruhlar: {ALLOWED_GROUP_IDS}")
-    print(f"👤 Adminlar: {ADMIN_IDS}")
-    print(f"👨‍💻 Dasturchi: {DEV_USERNAME}")
-    print(f"🤖 Bot: @{BOT_USERNAME}")
-    print("=" * 60)
 
-    # 1. Database ni ishga tushirish
-    print("🔄 Database ulanmoqda...")
+    # Database ga ulanish
     db_ok = await db.init_db()
     if not db_ok:
-        print("❌ Database bilan muammo!")
-        print("Iltimos, .env faylida DATABASE_URL ni tekshiring")
+        print("❌ Database bilan muammo! Bot ishlamaydi.")
         return
 
-    # 2. Command larni sozlash
-    print("⚙️ Command lar sozlanmoqda...")
-    await setup_bot_commands()
-
-    # 3. Mavjud kontaktlarni ko'rsatish
-    contacts = await db.get_contacts()
-    print(f"📋 Mavjud kontaktlar: {len(contacts)} ta")
-
-    # 4. Top kontaktlarni ko'rsatish
-    top_contacts = await db.get_top_contacts(8)
-    if top_contacts:
-        print("🔥 Eng ko'p bosilgan kontaktlar:")
-        for i, (service, phone, click_count) in enumerate(top_contacts, 1):
-            print(f"   {i}. {service}: {click_count} marta")
-
-    print("✅  Bot tayyor!")
+    print("✅ Bot tayyor!")
     print("=" * 60)
 
-    # 5. Botni ishga tushirish
+    # Botni ishga tushirish
     try:
         await dp.start_polling(bot, skip_updates=True)
     except Exception as e:
-        print(f"❌ Bot ishga tushirishda xatolik: {e}")
+        print(f"❌ Bot xatosi: {e}")
     finally:
-        # Bot to'xtaganda poolni yopish
-        if db.pool:
+        if hasattr(db, 'pool') and db.pool:
             await db.pool.close()
-            print("🗃️ Database pool yopildi.")
 
 
 if __name__ == "__main__":
