@@ -13,7 +13,7 @@ async def init_db():
 
     try:
         if not DATABASE_URL:
-            print("❌ DATABASE_URL topilmadi! .env.local yoki .env faylida DATABASE_URL ni kiriting")
+            print("❌ DATABASE_URL topilmadi! .env.local faylida DATABASE_URL ni kiriting")
             return False
 
         print("🔄 PostgreSQL database ulanmoqda...")
