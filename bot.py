@@ -19,7 +19,7 @@ import db
 # =================== BOT YARATISH ===================
 bot = Bot(
     token=BOT_TOKEN,
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML)  # HTHTML -> HTML ga o'zgartirildi
 )
 dp = Dispatcher()
 
@@ -257,9 +257,16 @@ async def restrict_bot_join(event: ChatMemberUpdated):
             return
 
         print(f"✅ Ruxsat berilgan guruhga qo'shildi: {chat.id}")
+
+        # Botni qo'shgan foydalanuvchini aniqlash uchun event.old_chat_member dan foydalanamiz
+        bot_added_by_user_id = None
+        if event.old_chat_member.status == ChatMemberStatus.LEFT:
+            # Bot yangi qo'shilgan bo'lsa, qo'shgan foydalanuvchi event.from_user bo'ladi
+            bot_added_by_user_id = event.from_user.id
+
         # Guruhga xabar yuborish
         welcome_text = (
-            "<b>\nAssalomu alaykum 😊</b>\n"
+            "<b>Assalomu alaykum 😊</b>\n\n"
             "<b>Mahalla Tezkor Aloqa Boti</b> ushbu guruhga muvaffaqiyatli biriktirildi.\n\n"
             "📍 <i>Mahallamiz uchun kerakli barcha aloqa raqamlari endi bir joyda!</i>\n\n"
             "📞 <b>Tezkor aloqa raqamlari:</b> /aloqa\n"
@@ -273,7 +280,7 @@ async def restrict_bot_join(event: ChatMemberUpdated):
         msg = await bot.send_message(
             chat.id,
             welcome_text,
-            reply_markup=create_main_menu(is_admin(event.from_user.id))
+            reply_markup=create_main_menu(is_admin(bot_added_by_user_id) if bot_added_by_user_id else False)
         )
 
         # 2️⃣ PIN qilishga urinamiz
@@ -370,14 +377,12 @@ async def show_contact_details(call: CallbackQuery):
         response = (
             f"👤 <b>{service}</b>\n\n"
             f"📞 <b>Telefon raqami:</b>\n"
-            f"<code>{phone}</code>\n\n"
+            f"<a href='+998901234567'>{phone}</a>\n\n"
         )
 
         # Qo'shimcha ma'lumot
-        if len(cleaned) <= 5 and cleaned.isdigit():
-            response += "<i>⚠️ Bu qisqa xizmat raqami. To'g'ridan-to'g'ri qo'ng'iroq qilishingiz mumkin.</i>"
-        elif is_long_uzbek:
-            response += "<i>📱 Raqamni nusxalash uchun ustiga bosing va tanlang.</i>"
+        if is_long_uzbek:
+            response += "<i>📱 Raqamga qo'ng'iroq qilish yoki nusxalash uchun ustiga bosing va tanlang.</i>"
 
         await call.message.edit_text(response, reply_markup=keyboard)
         await call.answer()
@@ -792,7 +797,7 @@ async def handle_menu(call: CallbackQuery, menu_option: str):
     if menu_option == "main":
         await call.message.edit_text(
             "🤖 <b>Mahalla Tezkor Aloqa Boti</b>\n\n"
-            "📍 <i>Mahalla uchun kerakli barcha aloqa raqamlari endi bir joyda!\n\n"
+            "📍 <i>Mahalla uchun kerakli barcha aloqa raqamlari endi bir joyda!</i>\n\n"
             "👇 Pastdagi tugmalardan foydalaning:",
             reply_markup=create_main_menu(is_admin_user)
         )
